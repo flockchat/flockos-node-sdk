@@ -1,0 +1,19 @@
+{
+    "name": "flockos",
+    "version": "0.0.1",
+    "description": "FlockOS SDK",
+    "main": "index.js",
+    "author": "Flock",
+    "license": "ISC",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/flockchat/flockos-node-sdk.git"
+    },
+    "engines" : { "node" : ">=4.4.0" },
+    "dependencies": {
+        "body-parser": "^1.15.2",
+        "express": "^4.14.0",
+        "jsonwebtoken": "^7.1.9",
+        "request": "^2.75.0"
+    }
+}
