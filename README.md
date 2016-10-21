@@ -1,12 +1,12 @@
 # FlockOS SDK for node.js
 
-# Installation
+## Installation
 
 ```
 npm install flockchat/flockos-node-sdk
 ```
 
-# Usage
+## Usage
 
 First, `require` the module, then set your app id and app secret.
 
@@ -23,7 +23,7 @@ To verify [event tokens][], you can either use the `verifyEventToken` function (
 flock.verifyEventToken(token);
 ```
 
-Or, if you use [express][], we provide a convenient middleware to automatically verify all event tokens, whether they are sent to the app service or a widget or browser URL:
+Or, if you use [express][], we provide a convenient middleware to automatically verify all event tokens, whether they are sent to the event listener URL or a widget or browser URL:
 
 ```js
 var app = express();
