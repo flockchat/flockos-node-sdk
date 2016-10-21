@@ -45,13 +45,15 @@ flock.events.on('client.slashCommand', function (event) {
 To call a [method][methods], use `flock.callMethod`.
 
 ```js
-flock.callMethod('chat.sendMessage', userToken, {
+flock.callMethod('chat.sendMessage', token, {
     message: {
         to: 'u:wufu4udrcewerudu',
         text: 'hello'
     }
-}, function (response) {
-    console.log(response);
+}, function (error, response) {
+    if (!error) {
+        console.log(response);
+    }
 });
 ```
 
