@@ -98,6 +98,13 @@ var UnexpectedResponseError = exports.UnexpectedResponseError = function (status
 exports.callMethod = function (name, token, parameters, callback) {
     parameters = parameters || {};
     parameters.token = token;
+    // stringify nested objects
+    Object.keys(parameters).forEach(function (key) {
+        var value = parameters[key];
+        if (typeof value === 'object') {
+            parameters[key] = JSON.stringify(value);
+        }
+    });
     var options = {
         url: METHODS_BASE_URL + name,
         method: 'POST',
