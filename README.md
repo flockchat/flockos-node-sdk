@@ -46,10 +46,8 @@ To call a [method][methods], use `flock.callMethod`.
 
 ```js
 flock.callMethod('chat.sendMessage', token, {
-    message: {
-        to: 'u:wufu4udrcewerudu',
-        text: 'hello'
-    }
+    to: 'u:wufu4udrcewerudu',
+    text: 'hello'
 }, function (error, response) {
     if (!error) {
         console.log(response);
