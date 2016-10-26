@@ -17,27 +17,30 @@ flock.setAppId('<app id>');
 flock.setAppSecret('<app secret>');
 ```
 
-To verify [event tokens][], you can either use the `verifyEventToken` function (this only works if have set the app secret):
+To verify [event tokens][], you can either use `flock.events.verifyToken`:
 
 ```js
-flock.verifyEventToken(token);
+flock.events.verifyToken(token);
 ```
 
 Or, if you use [express][], we provide a convenient middleware to automatically verify all event tokens, whether they are sent to the event listener URL or a widget or browser URL:
 
 ```js
 var app = express();
-app.use(flock.eventTokenChecker);
+app.use(flock.events.tokenVerifier);
 ```
 
 To handle [events][] an express router is provided. If you use this, you can listen for all incoming events on `flock.events`.
 
 ```js
-app.post('/events', flock.router);
+app.post('/events', flock.events.listener);
 
 flock.events.on('client.slashCommand', function (event) {
+    // handle slash command event here
+    ...
+    // return an object to send a response to an event
     return {
-        text: 'Got: ' + event.text
+        text: 'Received your command'
     }
 });
 ```
