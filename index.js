@@ -42,17 +42,23 @@ exports.eventTokenChecker = function (req, res, next) {
 };
 
 var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
-router.use(bodyParser.json());
 
 var EventEmitter = require('events');
 var events = new EventEmitter();
+events.router = express.Router();
+events.router.use(require('body-parser').json());
+events.router.use(exports.eventTokenChecker);
 
-router.use(function (req, res, next) {
+events.router.use(function (req, res, next) {
     console.log('received request: ', req.method, req.url, req.headers);
     console.log('received event: %j', req.body);
     var event = req.body;
+    var userId = event.userId;
+    if (userId !== res.locals.eventTokenPayload.userId) {
+        console.log('userId in event doesn\'t match the one in event token');
+        res.sendStatus(403);
+        return;
+    }
     var responded = false;
     events.listeners(event.name).forEach(function (listener) {
         var body = listener(event, res.locals.eventTokenPayload);
@@ -69,11 +75,10 @@ router.use(function (req, res, next) {
         }
     });
     if (!responded) {
-        res.sendStatus(200);
+        res.send({});
     }
 });
 
-exports.router = router;
 exports.events = events;
 
 var request = require('request');
