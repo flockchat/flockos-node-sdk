@@ -1,3 +1,8 @@
+var EventEmitter = require('events');
+var express = require('express');
+var jwt = require('jsonwebtoken');
+var request = require('request');
+
 var app = {
     id: null,
     secret: null
@@ -11,8 +16,10 @@ exports.setAppSecret = function (appSecret) {
     app.secret = appSecret;
 };
 
-var jwt = require('jsonwebtoken');
-var verifyEventToken = exports.verifyEventToken = function (token) {
+var events = new EventEmitter();
+
+// standalone function to verify event tokens
+events.verifyToken = function (token) {
     var payload = null;
     try {
         payload = jwt.verify(token, app.secret);
@@ -26,30 +33,33 @@ var verifyEventToken = exports.verifyEventToken = function (token) {
     return payload;
 };
 
-exports.eventTokenChecker = function (req, res, next) {
-    var token = req.get('x-flock-event-token') || req.query.flockEventToken;
-    if (token) {
-        var payload = verifyEventToken(token);
-        if (!payload) {
-            console.log('Invalid event token', token);
-            res.sendStatus(403);
-            return;
+// express middleware to verify event tokens
+// works for events sent to event listener, and widget/browser URLs
+events.tokenVerifier = function (req, res, next) {
+    // if res.locals.eventTokenPayload exists, we've already run the
+    // token verifier, no need to run it again
+    if (!res.locals.eventTokenPayload) {
+        var token = req.get('x-flock-event-token') || req.query.flockEventToken;
+        if (token) {
+            var payload = events.verifyToken(token);
+            if (!payload) {
+                console.log('Invalid event token', token);
+                res.sendStatus(403);
+                return;
+            }
+            res.locals.eventTokenPayload = payload;
+            console.log('Event token payload', payload);
         }
-        res.locals.eventTokenPayload = payload;
-        console.log('Event token payload', payload);
     }
     next();
 };
 
-var express = require('express');
-
-var EventEmitter = require('events');
-var events = new EventEmitter();
-events.router = express.Router();
-events.router.use(require('body-parser').json());
-events.router.use(exports.eventTokenChecker);
-
-events.router.use(function (req, res, next) {
+// express middleware that listens for events sent to the event listener URL
+// use events.on() to listen for events in your application
+events.listener = express.Router();
+events.listener.use(require('body-parser').json());
+events.listener.use(events.tokenVerifier);
+events.listener.use(function (req, res, next) {
     console.log('received request: ', req.method, req.url, req.headers);
     console.log('received event: %j', req.body);
     var event = req.body;
@@ -81,7 +91,6 @@ events.router.use(function (req, res, next) {
 
 exports.events = events;
 
-var request = require('request');
 var METHODS_BASE_URL = 'https://api.flock.co/v1/';
 
 var MethodError = exports.MethodError = function (statusCode, headers, body) {
@@ -100,6 +109,7 @@ var UnexpectedResponseError = exports.UnexpectedResponseError = function (status
     this.body = body;
 };
 
+// calls a Flock method
 exports.callMethod = function (name, token, parameters, callback) {
     parameters = parameters || {};
     parameters.token = token;
