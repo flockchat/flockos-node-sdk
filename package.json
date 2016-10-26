@@ -1,7 +1,7 @@
 {
     "name": "flockos",
-    "version": "0.0.2",
-    "description": "FlockOS SDK",
+    "version": "0.0.3",
+    "description": "FlockOS SDK for node.js",
     "main": "index.js",
     "author": "Flock",
     "license": "ISC",
