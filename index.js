@@ -16,6 +16,12 @@ exports.setAppSecret = function (appSecret) {
     app.secret = appSecret;
 };
 
+var methodsBaseUrl = 'https://api.flock.co/v1';
+
+exports.setMethodsBaseUrl = function (url) {
+    methodsBaseUrl = url;
+};
+
 var events = new EventEmitter();
 
 // standalone function to verify event tokens
@@ -91,8 +97,6 @@ events.listener.use(function (req, res, next) {
 
 exports.events = events;
 
-var METHODS_BASE_URL = 'https://api.flock.co/v1/';
-
 var MethodError = exports.MethodError = function (statusCode, headers, body) {
     this.statusCode = statusCode;
     this.headers = headers;
@@ -121,7 +125,7 @@ exports.callMethod = function (name, token, parameters, callback) {
         }
     });
     var options = {
-        url: METHODS_BASE_URL + name,
+        url: methodsBaseUrl + '/' + name,
         method: 'POST',
         form: parameters
     };
