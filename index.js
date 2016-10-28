@@ -114,7 +114,7 @@ var UnexpectedResponseError = exports.UnexpectedResponseError = function (status
 };
 
 // calls a Flock method
-exports.callMethod = function (name, token, parameters, callback) {
+var callMethod = exports.callMethod = function (name, token, parameters, callback) {
     parameters = parameters || {};
     parameters.token = token;
     // stringify nested objects
@@ -154,3 +154,26 @@ exports.callMethod = function (name, token, parameters, callback) {
         }
     });
 };
+
+// methods
+
+var chat = exports.chat = {};
+var groups = exports.groups = {};
+var roster = exports.roster = {};
+var users = exports.users = {};
+
+var createMethod = function (name) {
+    var parts = name.split('.');
+    var namespace = parts[0];
+    var unqualifiedName = parts[1];
+    exports[namespace][unqualifiedName] = function (token, parameters, callback) {
+        callMethod(name, token, parameters, callback);
+    };
+};
+
+createMethod('chat.sendMessage');
+createMethod('groups.getInfo');
+createMethod('groups.getMembers');
+createMethod('groups.list');
+createMethod('roster.listContacts');
+createMethod('users.getInfo');
