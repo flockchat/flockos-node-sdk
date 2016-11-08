@@ -2,6 +2,7 @@ var EventEmitter = require('events');
 var express = require('express');
 var jwt = require('jsonwebtoken');
 var request = require('request');
+var util = require('util');
 
 var app = {
     id: null,
@@ -98,20 +99,27 @@ events.listener.use(function (req, res, next) {
 exports.events = events;
 
 var MethodError = exports.MethodError = function (statusCode, headers, body) {
+    Error.call(this, body.description);
+    this.name = 'MethodError';
     this.statusCode = statusCode;
     this.headers = headers;
     this.errorCode = body.error;
     this.description = body.description;
     delete body.error;
     delete body.description;
-    this.parameters = body;
+    this.additionalAttributes = body;
 };
+util.inherits(MethodError, Error);
 
-var UnexpectedResponseError = exports.UnexpectedResponseError = function (statusCode, headers, body) {
+var UnexpectedResponseError = exports.UnexpectedResponseError = function (statusCode, headers, body, underlyingError) {
+    Error.call(this, underlyingError ? underlyingError.message : 'method call received an unexpected response');
+    this.name = 'UnexpectedResponseError';
     this.statusCode = statusCode;
     this.headers = headers;
     this.body = body;
+    this.underlyingError = underlyingError;
 };
+util.inherits(UnexpectedResponseError, Error);
 
 // calls a Flock method
 var callMethod = exports.callMethod = function (name, token, parameters, callback) {
@@ -133,20 +141,23 @@ var callMethod = exports.callMethod = function (name, token, parameters, callbac
         if (callback) {
             var statusCode = response.statusCode;
             var headers = response.headers;
-            var json = null;
             if (!error) {
+                var json = null;
+                var jsonParseError = null;
                 var contentType = headers['content-type'];
                 if (contentType && contentType.split(';')[0] === 'application/json') {
-                    json = JSON.parse(body);
+                    try {
+                        json = JSON.parse(body);
+                    } catch (e) {
+                        jsonParseError = e;
+                    }
                 }
-                if (statusCode === 200) {
+                if (jsonParseError) {
+                    callback(new UnexpectedResponseError(statusCode, headers, body, jsonParseError));
+                } else if (statusCode === 200) {
                     callback(null, json);
                 } else {
-                    if (json) {
-                        callback(new MethodError(statusCode, headers, json));
-                    } else {
-                        callback(new UnexpectedResponseError(statusCode, headers, body));
-                    }
+                    callback(new MethodError(statusCode, headers, json));
                 }
             } else {
                 callback(error);
