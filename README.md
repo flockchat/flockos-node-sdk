@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-npm install flockchat/flockos-node-sdk
+npm install flockos
 ```
 
 ## Usage
