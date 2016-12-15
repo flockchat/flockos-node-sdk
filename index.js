@@ -131,10 +131,10 @@ var callMethod = exports.callMethod = function (name, token, parameters, callbac
     };
     request(options, function (error, response, body) {
         if (callback) {
-            var statusCode = response.statusCode;
-            var headers = response.headers;
             var json = null;
             if (!error) {
+                var statusCode = response.statusCode;
+                var headers = response.headers;
                 var contentType = headers['content-type'];
                 if (contentType && contentType.split(';')[0] === 'application/json') {
                     json = JSON.parse(body);
