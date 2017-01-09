@@ -76,15 +76,32 @@ events.listener.use(function (req, res, next) {
         return;
     }
     var responded = false;
+    var sendError = function (error) {
+        var statusCode = error.statusCode || 400;
+        res.status(statusCode).send({ error: error.name,
+                                      description: error.message });
+    };
     events.listeners(event.name).forEach(function (listener) {
-        var body = listener(event, res.locals.eventTokenPayload);
+        var body, error;
+        try {
+            body = listener(event, res.locals.eventTokenPayload);
+        } catch (e) {
+            error = e;
+        }
         if (!responded) {
-            if (typeof body === 'function') {
-                body(function (body) {
-                    res.send(body);
+            if (error) {
+                sendError(error);
+                responded = true;
+            } else if (typeof body === 'function') {
+                body(function (error, body) {
+                    if (error) {
+                        sendError(error);
+                    } else {
+                        res.send(body);
+                    }
                 });
                 responded = true;
-            } else if (typeof body === 'object') {
+            } else if (typeof body === 'object' || typeof body === 'string') {
                 res.send(body);
                 responded = true;
             }
