@@ -2,6 +2,7 @@ var EventEmitter = require('events');
 var express = require('express');
 var jwt = require('jsonwebtoken');
 var request = require('request');
+var util = require('util');
 
 var app = {
     id: null,
@@ -115,20 +116,28 @@ events.listener.use(function (req, res, next) {
 exports.events = events;
 
 var MethodError = exports.MethodError = function (statusCode, headers, body) {
+    this.name = 'MethodError';
+    this.message = body.description;
     this.statusCode = statusCode;
     this.headers = headers;
     this.errorCode = body.error;
-    this.description = body.description;
     delete body.error;
     delete body.description;
-    this.parameters = body;
+    this.additionalAttributes = body;
+    this.stack = (new Error()).stack;
 };
+util.inherits(MethodError, Error);
 
-var UnexpectedResponseError = exports.UnexpectedResponseError = function (statusCode, headers, body) {
+var UnexpectedResponseError = exports.UnexpectedResponseError = function (statusCode, headers, body, underlyingError) {
+    this.name = 'UnexpectedResponseError';
+    this.message = underlyingError ? underlyingError.message : 'method call received an unexpected response';
     this.statusCode = statusCode;
     this.headers = headers;
     this.body = body;
+    this.underlyingError = underlyingError;
+    this.stack = (new Error()).stack;
 };
+util.inherits(UnexpectedResponseError, Error);
 
 // calls a Flock method
 var callMethod = exports.callMethod = function (name, token, parameters, callback) {
@@ -148,22 +157,29 @@ var callMethod = exports.callMethod = function (name, token, parameters, callbac
     };
     request(options, function (error, response, body) {
         if (callback) {
-            var json = null;
             if (!error) {
+                var json = null;
+                var error = null;
                 var statusCode = response.statusCode;
                 var headers = response.headers;
                 var contentType = headers['content-type'];
-                if (contentType && contentType.split(';')[0] === 'application/json') {
-                    json = JSON.parse(body);
+                if (contentType) {
+                    if (contentType.split(';')[0] === 'application/json') {
+                        try {
+                            json = JSON.parse(body);
+                        } catch (jsonError) {
+                            error = new UnexpectedResponseError(statusCode, headers, body, jsonError);
+                        }
+                    } else {
+                        error = new UnexpectedResponseError(statusCode, headers, body, null);
+                    }
                 }
-                if (statusCode === 200) {
+                if (error) {
+                    callback(error);
+                } else if (statusCode === 200) {
                     callback(null, json);
                 } else {
-                    if (json) {
-                        callback(new MethodError(statusCode, headers, json));
-                    } else {
-                        callback(new UnexpectedResponseError(statusCode, headers, body));
-                    }
+                    callback(new MethodError(statusCode, headers, json));
                 }
             } else {
                 callback(error);
