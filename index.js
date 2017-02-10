@@ -9,19 +9,9 @@ var app = {
     secret: null
 };
 
-exports.setAppId = function (appId) {
-    app.id = appId;
-};
-
-exports.setAppSecret = function (appSecret) {
-    app.secret = appSecret;
-};
-
-var methodsBaseUrl = 'https://api.flock.co/v1';
-
-exports.setMethodsBaseUrl = function (url) {
-    methodsBaseUrl = url;
-};
+exports.appId = null;
+exports.appSecret = null;
+exports.baseUrl = 'https://api.flock.co/v1';
 
 var events = new EventEmitter();
 
@@ -29,7 +19,7 @@ var events = new EventEmitter();
 events.verifyToken = function (token) {
     var payload = null;
     try {
-        payload = jwt.verify(token, app.secret);
+        payload = jwt.verify(token, exports.appSecret);
     } catch (e) {
         if (e instanceof jwt.JsonWebTokenError) {
             console.log('Got error while verifying token: ' + e);
@@ -151,7 +141,7 @@ var callMethod = exports.callMethod = function (name, token, parameters, callbac
         }
     });
     var options = {
-        url: methodsBaseUrl + '/' + name,
+        url: exports.baseUrl + '/' + name,
         method: 'POST',
         form: parameters
     };
