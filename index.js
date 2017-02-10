@@ -61,7 +61,6 @@ events.tokenVerifier = function (req, res, next) {
                 return;
             }
             res.locals.eventTokenPayload = payload;
-            console.log('Event token payload', payload);
         }
     }
     next();
@@ -72,44 +71,44 @@ events.tokenVerifier = function (req, res, next) {
 events.listener = express.Router();
 events.listener.use(require('body-parser').json());
 events.listener.use(events.tokenVerifier);
+events.responseTimeout = 60 * 1000;
 events.listener.use(function (req, res, next) {
     console.log('received request: ', req.method, req.url, req.headers);
     console.log('received event: %j', req.body);
     var event = req.body;
     var responded = false;
-    var sendError = function (error) {
-        var statusCode = error.statusCode || 400;
-        res.status(statusCode).send({ error: error.name,
-                                      description: error.message });
-    };
+    var timeoutID = null;
     events.listeners(event.name).forEach(function (listener) {
-        var body, error;
         try {
-            body = listener(event, res.locals.eventTokenPayload);
+            listener(event, function (error, body) {
+                if (responded) {
+                    console.warn('(%s) Only one listener can respond to an event', event.name);
+                    return;
+                }
+                responded = true;
+                if (timeoutID) {
+                    clearTimeout(timeoutID);
+                }
+                if (error) {
+                    var statusCode = error.statusCode || 400;
+                    res.status(statusCode).send({ error: error.name,
+                                                  description: error.message });
+                } else if (body && typeof body === 'object' || typeof body === 'string') {
+                    res.send(body);
+                } else {
+                    res.send({});
+                }
+            });
         } catch (e) {
-            error = e;
-        }
-        if (!responded) {
-            if (error) {
-                sendError(error);
-                responded = true;
-            } else if (typeof body === 'function') {
-                body(function (error, body) {
-                    if (error) {
-                        sendError(error);
-                    } else {
-                        res.send(body);
-                    }
-                });
-                responded = true;
-            } else if (typeof body === 'object' || typeof body === 'string') {
-                res.send(body);
-                responded = true;
-            }
+            console.warn('(%s) Got an error in event listener', event.name, e);
         }
     });
+    // respond to an event after events.responseTimeout if none of the
+    // listeners do by then
     if (!responded) {
-        res.send({});
+        timeoutID = setTimeout(function () {
+            res.send({});
+        }, events.responseTimeout);
     }
 });
 
