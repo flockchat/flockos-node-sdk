@@ -16,15 +16,19 @@ exports.baseUrl = 'https://api.flock.co/v1';
 var events = new EventEmitter();
 
 // standalone function to verify event tokens
-events.verifyToken = function (token) {
+events.verifyToken = function (token, userId) {
     var payload = null;
     try {
         payload = jwt.verify(token, exports.appSecret);
     } catch (e) {
-        if (e instanceof jwt.JsonWebTokenError) {
-            console.log('Got error while verifying token: ' + e);
-        } else {
-            throw e;
+        console.warn('Got error while verifying token: ' + e);
+    }
+    if (payload) {
+        if (!(payload.appId && payload.appId === exports.appId)) {
+            return null;
+        }
+        if (userId && !(payload.userId && payload.userId === userId)) {
+            return null;
         }
     }
     return payload;
@@ -38,9 +42,21 @@ events.tokenVerifier = function (req, res, next) {
     if (!res.locals.eventTokenPayload) {
         var token = req.get('x-flock-event-token') || req.query.flockEventToken;
         if (token) {
-            var payload = events.verifyToken(token);
+            // if userId is given, include it for verification
+            var userId = null;
+            if (req.is('application/json') && req.body) {
+                userId = req.body.userId;
+            } else if (req.query.flockEvent) {
+                try {
+                    var event = JSON.parse(req.query.flockEvent);
+                    userId = event.userId;
+                } catch (e) {
+                    //console.warn('Couldn't parse flockEvent query param');
+                }
+            }
+            var payload = events.verifyToken(token, userId);
             if (!payload) {
-                console.log('Invalid event token', token);
+                console.warn('Invalid event token', token);
                 res.sendStatus(403);
                 return;
             }
