@@ -76,12 +76,6 @@ events.listener.use(function (req, res, next) {
     console.log('received request: ', req.method, req.url, req.headers);
     console.log('received event: %j', req.body);
     var event = req.body;
-    var userId = event.userId;
-    if (userId !== res.locals.eventTokenPayload.userId) {
-        console.log('userId in event doesn\'t match the one in event token');
-        res.sendStatus(403);
-        return;
-    }
     var responded = false;
     var sendError = function (error) {
         var statusCode = error.statusCode || 400;
