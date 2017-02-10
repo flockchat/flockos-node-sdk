@@ -205,6 +205,7 @@ var createMethod = function (name) {
 };
 
 createMethod('chat.sendMessage');
+createMethod('chat.fetchMessages');
 createMethod('groups.getInfo');
 createMethod('groups.getMembers');
 createMethod('groups.list');
