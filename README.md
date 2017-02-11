@@ -13,8 +13,8 @@ First, `require` the module, then set your app id and app secret.
 ```js
 var flock = require('flockos');
 
-flock.setAppId('<app id>');
-flock.setAppSecret('<app secret>');
+flock.appId = '<app id>';
+flock.appSecret = '<app secret>';
 ```
 
 To verify [event tokens][], you can either use `flock.events.verifyToken`:
@@ -35,13 +35,11 @@ To handle [events][] an express router is provided. If you use this, you can lis
 ```js
 app.post('/events', flock.events.listener);
 
-flock.events.on('client.slashCommand', function (event) {
+flock.events.on('client.slashCommand', function (event, callback) {
     // handle slash command event here
     ...
-    // return an object to send a response to an event
-    return {
-        text: 'Received your command'
-    }
+    // invoke the callback to send a response to the event
+    callback(null, { text: 'Received your command' });
 });
 ```
 
