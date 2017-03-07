@@ -1,17 +1,11 @@
 var EventEmitter = require('events');
 var express = require('express');
 var jwt = require('jsonwebtoken');
-var request = require('request');
-var util = require('util');
-
-var app = {
-    id: null,
-    secret: null
-};
+var methods = require('./methods');
+var methodUtils = require('./methodUtils');
 
 exports.appId = null;
 exports.appSecret = null;
-exports.baseUrl = 'https://api.flock.co/v1';
 
 var events = new EventEmitter();
 
@@ -112,101 +106,15 @@ events.listener.use(function (req, res, next) {
     }
 });
 
+Object.defineProperty(exports, 'baseUrl', {
+    set: function(value) {
+        methodUtils.baseUrl = value;
+    },
+    get: function() {
+        return methodUtils.baseUrl;
+    }
+});
+
 exports.events = events;
 
-var MethodError = exports.MethodError = function (statusCode, headers, body) {
-    this.name = 'MethodError';
-    this.message = body.description;
-    this.statusCode = statusCode;
-    this.headers = headers;
-    this.errorCode = body.error;
-    delete body.error;
-    delete body.description;
-    this.additionalAttributes = body;
-    this.stack = (new Error()).stack;
-};
-util.inherits(MethodError, Error);
-
-var UnexpectedResponseError = exports.UnexpectedResponseError = function (statusCode, headers, body, underlyingError) {
-    this.name = 'UnexpectedResponseError';
-    this.message = underlyingError ? underlyingError.message : 'method call received an unexpected response';
-    this.statusCode = statusCode;
-    this.headers = headers;
-    this.body = body;
-    this.underlyingError = underlyingError;
-    this.stack = (new Error()).stack;
-};
-util.inherits(UnexpectedResponseError, Error);
-
-// calls a Flock method
-var callMethod = exports.callMethod = function (name, token, parameters, callback) {
-    parameters = parameters || {};
-    parameters.token = token;
-    // stringify nested objects
-    Object.keys(parameters).forEach(function (key) {
-        var value = parameters[key];
-        if (typeof value === 'object') {
-            parameters[key] = JSON.stringify(value);
-        }
-    });
-    var options = {
-        url: exports.baseUrl + '/' + name,
-        method: 'POST',
-        form: parameters
-    };
-    request(options, function (error, response, body) {
-        if (callback) {
-            if (!error) {
-                var json = null;
-                var error = null;
-                var statusCode = response.statusCode;
-                var headers = response.headers;
-                var contentType = headers['content-type'];
-                if (contentType) {
-                    if (contentType.split(';')[0] === 'application/json') {
-                        try {
-                            json = JSON.parse(body);
-                        } catch (jsonError) {
-                            error = new UnexpectedResponseError(statusCode, headers, body, jsonError);
-                        }
-                    } else {
-                        error = new UnexpectedResponseError(statusCode, headers, body, null);
-                    }
-                }
-                if (error) {
-                    callback(error);
-                } else if (statusCode === 200) {
-                    callback(null, json);
-                } else {
-                    callback(new MethodError(statusCode, headers, json));
-                }
-            } else {
-                callback(error);
-            }
-        }
-    });
-};
-
-// methods
-
-var chat = exports.chat = {};
-var groups = exports.groups = {};
-var roster = exports.roster = {};
-var users = exports.users = {};
-
-var createMethod = function (name) {
-    var parts = name.split('.');
-    var namespace = parts[0];
-    var unqualifiedName = parts[1];
-    exports[namespace][unqualifiedName] = function (token, parameters, callback) {
-        callMethod(name, token, parameters, callback);
-    };
-};
-
-createMethod('chat.sendMessage');
-createMethod('chat.fetchMessages');
-createMethod('groups.getInfo');
-createMethod('groups.getMembers');
-createMethod('groups.list');
-createMethod('roster.listContacts');
-createMethod('users.getInfo');
+Object.assign(exports, methods, methodUtils);
