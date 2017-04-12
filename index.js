@@ -13,7 +13,9 @@ var events = new EventEmitter();
 events.verifyToken = function (token, userId) {
     var payload = null;
     try {
-        payload = jwt.verify(token, exports.appSecret);
+        payload = jwt.verify(token, exports.appSecret, {
+            algorithms: ['HS256']
+        });
     } catch (e) {
         console.warn('Got error while verifying token: ' + e);
     }
