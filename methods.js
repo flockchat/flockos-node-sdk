@@ -1,8 +1,8 @@
 var methodUtils = require('./methodUtils');
 // methods
  
+var channels = exports.channels = {}; 
 var chat = exports.chat = {}; 
-var groups = exports.groups = {}; 
 var roster = exports.roster = {}; 
 var users = exports.users = {};  
 
@@ -15,11 +15,11 @@ var createMethod = function (name) {
     };
 };
 
+createMethod('channels.getInfo');
+createMethod('channels.list');
+createMethod('channels.listMembers');
 createMethod('chat.fetchMessages');
 createMethod('chat.sendMessage');
-createMethod('groups.getInfo');
-createMethod('groups.getMembers');
-createMethod('groups.list');
 createMethod('roster.listContacts');
 createMethod('users.getInfo');
 createMethod('users.getPublicProfile');
