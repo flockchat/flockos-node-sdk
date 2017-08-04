@@ -56,6 +56,19 @@ flock.callMethod('chat.sendMessage', token, {
 });
 ```
 
+Or you can call flock.\<method\> directly.
+
+```
+flock.chat.sendMessage(token, {
+    to: 'u:wufu4udrcewerudu',
+    text: 'hello'
+}, function (error, response) {
+    if (!error) {
+        console.log(response);
+    }
+});
+```
+
 [methods]: http://docs.flock.co/display/flockos/Methods
 [events]: http://docs.flock.co/display/flockos/Events
 [event tokens]: http://docs.flock.co/display/flockos/Event+Tokens
